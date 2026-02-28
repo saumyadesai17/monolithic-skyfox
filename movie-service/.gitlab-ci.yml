@@ -1,0 +1,50 @@
+
+image: node:latest
+
+variables:
+  IMAGE_NAME: registry.gitlab.com/tw-catalyst/movie-service/service
+
+stages:
+  - package
+  - deploy-nonprod
+  - deploy-prod
+
+package:
+  image: docker:latest
+  stage: package
+  services:
+    - docker:dind
+  environment:
+    name: integration
+  script:
+    - export IMAGE=$IMAGE_NAME:latest
+    - echo "image info - $IMAGE"
+    - docker -v login -u gitlab-ci-token -p $GITLAB_REGISTRY_PASSWORD registry.gitlab.com
+    - docker build --build-arg ENVIRONMENT=$CI_ENVIRONMENT_SLUG -t $IMAGE .
+    - docker push $IMAGE
+  only:
+    - master
+
+deploy-nonprod:
+  image: registry.gitlab.com/gitlab-org/cloud-deploy/aws-ecs:latest
+  stage: deploy-nonprod
+  environment:
+    name: nonprod
+  script:
+    - cd deploy
+    - ./deploy.sh
+  only:
+    - master
+
+deploy-prod:
+  image: registry.gitlab.com/gitlab-org/cloud-deploy/aws-ecs:latest
+  stage: deploy-prod
+  when: manual
+  environment:
+    name: prod
+  script:
+    - cd deploy
+    - ./deploy.sh
+  only:
+    - master
+

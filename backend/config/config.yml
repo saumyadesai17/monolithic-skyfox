@@ -1,0 +1,20 @@
+Server:
+  port: ${SERVER_PORT}
+  ReadTimeout: 5
+  WriteTimeout: 5
+  GineMode: debug
+
+Database:
+  host: ${DB_HOST}
+  port: ${DB_PORT}
+  name: ${DB_NAME}
+  user: ${POSTGRES_USERNAME}
+  password: ${POSTGRES_PASSWORD}
+  MigrationPath: migration/scripts
+
+Logger:
+  Level: debug
+
+MovieGateway:
+  UiHost: ${UI_HOST}
+  movieServiceHost: ${MOVIE_SERVICE_HOST}

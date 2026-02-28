@@ -1,0 +1,9 @@
+version: "1"
+registry_credential_outputs:
+  task_execution_role: catalystSecretsExecutionRoleCI
+  container_credentials:
+    catalyst_gitlab_registry:
+      credentials_parameter: ENV_GITLAB_REGISTRY_SECRET_ARN
+      container_names:
+      - db
+      - web

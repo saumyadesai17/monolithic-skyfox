@@ -1,0 +1,36 @@
+services:
+  test-db:
+    image: artifactory.idfcfirstbank.com/neev-docker/postgres:latest
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=bookingtest
+      - POSTGRES_USER=bookingtest
+      - POSTGRES_PASSWORD=postgres
+      - PORT=5432
+    healthcheck:
+      test: ["CMD", "pg_isready", "-q", "-d", "${POSTGRES_DB}", "-U", "${POSTGRES_USER}", "-p", "5432"]
+      timeout: 45s
+      interval: 10s
+      retries: 5
+
+  test-env:
+    depends_on:
+      test-db:
+        condition: service_healthy
+    image: artifactory.idfcfirstbank.com/neev-docker/golang:1.22
+    environment:
+      - GO111MODULE=on
+      - GOPROXY=https://artifactory.idfcfirstbank.com/artifactory/api/go/optimus-golang
+      - GOOS=linux
+      - GOARCH=amd64
+      - CGO_ENABLED=0
+      - GOFLAGS=-buildvcs=false
+      - DOCKER_HOST=$DOCKER_HOST
+      - RUNNING_ON_CI=true
+    volumes:
+      - ../:/home/optimus/falcon-booking-backend
+      - ./IDFCBANKCA.pem:/etc/ssl/certs/IDFCBANKCA.pem
+      - /var/run/docker.sock:/var/run/docker.sock
+    working_dir: /home/optimus/falcon-booking-backend
+    entrypoint: ["./scripts/run_tests_ci.sh"]

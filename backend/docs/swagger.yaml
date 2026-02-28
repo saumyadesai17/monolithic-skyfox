@@ -1,0 +1,266 @@
+basePath: /
+definitions:
+  error.AppError:
+    properties:
+      code:
+        type: string
+      error: {}
+      message:
+        type: string
+    type: object
+  model.Customer:
+    properties:
+      id:
+        type: integer
+      name:
+        maxLength: 15
+        minLength: 2
+        type: string
+      phoneNumber:
+        type: string
+    required:
+    - name
+    type: object
+  model.Movie:
+    properties:
+      duration:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      plot:
+        type: string
+    type: object
+  model.Slot:
+    properties:
+      endTime:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      startTime:
+        type: string
+    type: object
+  request.BookingRequest:
+    properties:
+      customer:
+        $ref: '#/definitions/model.Customer'
+      date:
+        type: string
+      noOfSeats:
+        type: string
+      showId:
+        minimum: 1
+        type: integer
+    required:
+    - customer
+    - date
+    - noOfSeats
+    - showId
+    type: object
+  response.BookingConfirmationResponse:
+    properties:
+      amountPaid:
+        minimum: 0
+        type: number
+      customerName:
+        maxLength: 50
+        minLength: 3
+        type: string
+      id:
+        type: integer
+      noOfSeats:
+        minimum: 1
+        type: integer
+      showDate:
+        type: string
+      startTime:
+        type: string
+    required:
+    - amountPaid
+    - customerName
+    - noOfSeats
+    - showDate
+    type: object
+  response.ShowResponse:
+    properties:
+      cost:
+        type: number
+      date:
+        type: string
+      id:
+        type: integer
+      movie:
+        $ref: '#/definitions/model.Movie'
+      slot:
+        $ref: '#/definitions/model.Slot'
+    type: object
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: This is a skyfox
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: Booking API
+  version: "1.0"
+paths:
+  /bookings:
+    post:
+      consumes:
+      - application/json
+      description: Book a Ticket
+      parameters:
+      - description: Enter basic auth
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Book Ticket
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.BookingRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.BookingConfirmationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/error.AppError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/error.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/error.AppError'
+      security:
+      - BasicAuth: []
+      summary: Booking
+      tags:
+      - Booking
+  /login:
+    get:
+      consumes:
+      - application/json
+      description: login
+      parameters:
+      - description: Enter basic auth
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/error.AppError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/error.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/error.AppError'
+      summary: Login
+      tags:
+      - login
+  /revenue:
+    get:
+      consumes:
+      - application/json
+      description: get revenue by date
+      parameters:
+      - description: Enter basic auth
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: to get shows
+        in: query
+        name: date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: number
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/error.AppError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/error.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/error.AppError'
+      security:
+      - BasicAuth: []
+      summary: Revenue
+      tags:
+      - Revenue
+  /shows:
+    get:
+      consumes:
+      - application/json
+      description: get shows by date
+      parameters:
+      - description: Enter basic auth
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: to get shows
+        in: query
+        name: date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.ShowResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/error.AppError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/error.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/error.AppError'
+      security:
+      - BasicAuth: []
+      summary: Shows
+      tags:
+      - Shows
+swagger: "2.0"

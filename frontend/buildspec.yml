@@ -1,0 +1,32 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - aws --version
+      - docker --version
+      - CI_COMMIT_SHORT_SHA=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c1-6)
+      - REACT_IMAGE="$REGISTRY_URI/neev-$BATCH_ID-$TEAM_ID-frontend-ecr"
+      - REACT_EC2_IMAGE="$REGISTRY_URI/neev-$BATCH_ID-$TEAM_ID-frontend-ec2"
+      - echo "building $REACT_IMAGE with tag $CI_COMMIT_SHORT_SHA"
+      - echo "building $REACT_EC2_IMAGE with tag $CI_COMMIT_SHORT_SHA"
+      - aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $REGISTRY_URI
+  build:
+    commands:
+      - npm --version
+      - node --version
+      - yarn install
+      - yarn test
+      - yarn build
+      - docker build --build-arg ENVIRONMENT=$CI_ENVIRONMENT_SLUG --build-arg REACT_APP_ON_EC2=true --build-arg REGISTRY_URI="${REGISTRY_URI}" --build-arg PUBLIC_HOSTNAME_AND_PORT="${PUBLIC_HOSTNAME_AND_PORT}" -t "$REACT_EC2_IMAGE:${CI_ENVIRONMENT_SLUG}_${CI_COMMIT_SHORT_SHA}" .
+  post_build:
+    commands:
+      - echo "Pushing $REACT_EC2_IMAGE:${CI_ENVIRONMENT_SLUG}_${CI_COMMIT_SHORT_SHA}"
+      - docker push "$REACT_EC2_IMAGE:${CI_ENVIRONMENT_SLUG}_${CI_COMMIT_SHORT_SHA}"
+      - echo "export UI_IMAGE=$REACT_EC2_IMAGE:${CI_ENVIRONMENT_SLUG}_${CI_COMMIT_SHORT_SHA}" >> frontend-outputs.sh
+
+artifacts:
+  files:
+    - appspec.yml
+    - scripts/start.sh
+    - frontend-outputs.sh

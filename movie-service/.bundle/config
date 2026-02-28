@@ -1,0 +1,6 @@
+
+---
+BUNDLE_SSL_CERT_FILE: "/Users/geetha.selvam_tho/workspace/code/temp/go-skyfox-backend-base/infrastructure/IDFCBANKCA.pem"
+BUNDLE_DISABLE_SSL_VERIFY: "true"
+
+

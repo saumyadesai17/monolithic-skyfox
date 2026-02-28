@@ -1,0 +1,70 @@
+version: '3.0'
+services:
+  db:
+    image: artifactory.idfcfirstbank.com/neev-docker/postgres:latest
+    container_name: db
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=bookingengine
+      - POSTGRES_USER=bookingengine
+      - POSTGRES_PASSWORD=postgres
+      - PORT=5432
+    healthcheck:
+      test: ["CMD", "pg_isready", "-q", "-d", "${POSTGRES_DB}", "-U", "${POSTGRES_USER}", "-p", "5432"]
+      timeout: 45s
+      interval: 10s
+      retries: 5
+    networks:
+      - skyfoxnet
+
+  migration:
+    build:
+      context: .
+      dockerfile: Dockerfile-migration
+      args:
+        - REGISTRY_URI=artifactory.idfcfirstbank.com/neev-docker
+    container_name: migration
+    environment:
+      - DB_NAME=bookingengine
+      - POSTGRES_USERNAME=bookingengine
+      - DB_HOST=db
+      - UI_HOST=http://localhost:3000
+      - DB_PORT=5432
+      - POSTGRES_PASSWORD=postgres
+    links:
+      - db
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - skyfoxnet
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: app
+    environment:
+      - DB_NAME=bookingengine
+      - POSTGRES_USERNAME=bookingengine
+      - DB_HOST=db
+      - UI_HOST=http://localhost:3000
+      - DB_PORT=5432
+      - POSTGRES_PASSWORD=postgres
+      - SERVER_PORT=8080
+    links:
+      - db
+    depends_on:
+      db:
+        condition: service_healthy
+      migration:
+        condition: service_completed_successfully
+    ports:
+      - "8080:8080"
+    networks:
+      - skyfoxnet
+
+networks:
+  skyfoxnet: {}
+  

@@ -1,0 +1,23 @@
+Server:
+  Port: 8080
+  ReadTimeout: 5
+  WriteTimeout: 5
+  GineMode: debug
+
+Database:
+  Host: localhost
+  Port: 5432
+  Name: bookingengine
+  User: bookingengine
+  Password: postgres
+  MigrationPath: migration/scripts
+
+Logger:
+  Level: debug
+
+MovieGateway:
+  UiHost: http://localhost:3000
+  MovieServiceHost: http://localhost:4567/
+
+
+

@@ -1,0 +1,48 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - export PATH="/usr/bin/:$PATH"
+  pre_build:
+    commands:
+      - aws --version
+      - docker --version
+      - CI_COMMIT_SHORT_SHA=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c1-6)
+      - ECR_BACKEND_REPOSITORY="$REGISTRY_URI/neev-$BATCH_ID-$TEAM_ID-backend-ecr"
+      - ECR_MIGRATION_REPOSITORY="$REGISTRY_URI/neev-$BATCH_ID-$TEAM_ID-migration-ecr"
+      - echo "building $ECR_BACKEND_REPOSITORY with tag $CI_COMMIT_SHORT_SHA"
+      - echo "building $ECR_MIGRATION_REPOSITORY with tag $CI_COMMIT_SHORT_SHA"
+      - $(aws ecr get-login --no-include-email --region $REGION --registry-ids $REGISTRY_ID) # TODO : depricated; find a better way
+  build:
+    commands:
+      - echo "Build step"
+      # - make build
+      - export $(cat Makefile | grep appVersion)
+      - docker build -t bookingapi:latest . --no-cache --build-arg VERSION="$appVersion-$CI_COMMIT_SHORT_SHA" --build-arg REGISTRY_URI="${REGISTRY_URI}" --build-arg GOOS=linux --build-arg GOARCH=amd64
+      - docker tag bookingapi:latest $ECR_BACKEND_REPOSITORY:$CI_COMMIT_SHORT_SHA
+      - docker build -f Dockerfile-migration -t migration:latest . --no-cache --build-arg VERSION="$appVersion-$CI_COMMIT_SHORT_SHA" --build-arg REGISTRY_URI="${REGISTRY_URI}"  --build-arg GOOS=linux --build-arg GOARCH=amd64
+      - docker tag migration:latest $ECR_MIGRATION_REPOSITORY:$CI_COMMIT_SHORT_SHA
+  post_build:
+    commands:
+      - echo "Post build step"
+      - docker push $ECR_BACKEND_REPOSITORY:$CI_COMMIT_SHORT_SHA
+      - docker push $ECR_MIGRATION_REPOSITORY:$CI_COMMIT_SHORT_SHA
+      - export $(cat Makefile | grep appVersion)
+      - export VERSION="$appVersion-$CI_COMMIT_SHORT_SHA"
+      - echo "export VERSION=$VERSION" >> outputs.sh
+      - echo "export BOOKING_IMAGE=$ECR_BACKEND_REPOSITORY:$CI_COMMIT_SHORT_SHA" >> outputs.sh
+      - echo "export MIGRATION_IMAGE=$ECR_MIGRATION_REPOSITORY:$CI_COMMIT_SHORT_SHA" >> outputs.sh
+      - echo "Creating image definitions file"
+      - printf '[{"name":"db","imageUri":"%s"},' "$REGISTRY_URI/neev-postgres:stable" >> imagedefinitions.json
+      - printf '{"name":"backend","imageUri":"%s"}]' $ECR_BACKEND_REPOSITORY:$CI_COMMIT_SHORT_SHA >> imagedefinitions.json
+      - printf '{"name":"migration","imageUri":"%s"}]' $ECR_MIGRATION_REPOSITORY:$CI_COMMIT_SHORT_SHA >> imagedefinitions.json
+
+artifacts:
+  files:
+    - imagedefinitions.json
+    - appspec.yml
+    - scripts/test_deployment.sh
+    - docker-compose.yml
+    - outputs.sh
+    - scripts/seedShowData.sh

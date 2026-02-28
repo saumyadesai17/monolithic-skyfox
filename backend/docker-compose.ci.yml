@@ -1,0 +1,44 @@
+version: '3.0'
+services:
+  falcon-booking-backend-migration:
+    image: falcon-booking-backend-migration
+    build:
+      context: .
+      dockerfile: Dockerfile-migration
+      args:
+        - REGISTRY_URI=artifactory.idfcfirstbank.com/neev-docker
+    container_name: migration
+    environment:
+      - DB_NAME=bookingengine
+      - POSTGRES_USERNAME=bookingengine
+      - DB_HOST=db
+      - UI_HOST=http://localhost:3000
+      - DB_PORT=5432
+      - POSTGRES_PASSWORD=postgres
+    networks:
+      - skyfoxnet
+
+  falcon-booking-backend:
+    image: falcon-booking-backend
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - REGISTRY_URI=artifactory.idfcfirstbank.com/neev-docker
+    container_name: app
+    environment:
+      - DB_NAME=bookingengine
+      - POSTGRES_USERNAME=bookingengine
+      - DB_HOST=db
+      - UI_HOST=http://localhost:3000
+      - DB_PORT=5432
+      - POSTGRES_PASSWORD=postgres
+      - SERVER_PORT=8080
+    ports:
+      - "8080:8080"
+    networks:
+      - skyfoxnet
+
+networks:
+  skyfoxnet: {}
+  

@@ -1,0 +1,34 @@
+ARG REGISTRY_URI=artifactory.idfcfirstbank.com/neev-docker
+FROM ${REGISTRY_URI}/golang:alpine as builder
+
+ARG VERSION=1.0
+ARG OS
+ARG ARCH
+
+ENV GOPROXY=https://artifactory.idfcfirstbank.com/artifactory/api/go/optimus-golang
+COPY infrastructure/IDFCBANKCA.pem /etc/ssl/certs/
+
+# FROM golang as builder
+ENV GO111MODULE=on
+WORKDIR /code
+COPY go.mod go.sum /code/
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=${OS} GOARCH=${ARCH} go build -o ./out/migrations migration/migration.go
+
+# pre-copy/cache go.mod for pre-downloading dependencies and only redownloading them in subsequent builds if they change
+COPY Makefile ./
+
+FROM ${REGISTRY_URI}/alpine/psql
+
+WORKDIR /app
+
+COPY --from=builder /code/out/migrations ./out/migrations
+COPY --from=builder /code/migration/scripts ./migration/scripts
+COPY --from=builder /code/scripts ./scripts
+
+COPY config/config.yml config.yml 
+
+EXPOSE 8080
+
+ENTRYPOINT ["sh", "-c", "out/migrations -configFile config.yml up && ./scripts/seedShowData.sh"]
