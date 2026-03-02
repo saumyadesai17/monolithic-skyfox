@@ -1,6 +1,7 @@
 package validator
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -10,12 +11,15 @@ import (
 )
 
 func HandleStructValidationError(err error) interface{} {
+	var validationErrors validator.ValidationErrors
+	if !errors.As(err, &validationErrors) {
+		// Not a field-validation error (e.g. malformed JSON body).
+		return ae.BadRequestError("BadRequest", err.Error(), err)
+	}
 
-	var structErrors []string
-
-	for _, fieldErr := range err.(validator.ValidationErrors) {
-		structErrors = append(structErrors, fieldError{fieldErr}.String())
-		return ae.BadRequestError("validation failed", structErrors[0], fieldErr)
+	for _, fieldErr := range validationErrors {
+		msg := fieldError{fieldErr}.String()
+		return ae.BadRequestError("ValidationFailed", msg, fieldErr)
 	}
 	return nil
 }
@@ -50,6 +54,10 @@ func validationErrorToText(fieldErr validator.FieldError) string {
 		return fmt.Sprintf("%s must be %s characters long", fieldErr.Field(), fieldErr.Param())
 	case "gte":
 		return fmt.Sprintf("%s must be greater than %s", fieldErr.Field(), fieldErr.Param())
+	case "phoneNumber":
+		return fmt.Sprintf("%s must be exactly 10 digits", fieldErr.Field())
+	case "passwordStrength":
+		return fmt.Sprintf("%s must be at least 8 characters and contain an uppercase letter, a digit, and a special character", fieldErr.Field())
 	}
 	return fmt.Sprintf("%s is not valid", fieldErr.Field())
 }

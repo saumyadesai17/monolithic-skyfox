@@ -2,8 +2,8 @@ package service
 
 import (
 	"context"
-	"skyfox/_mocks/repomocks"
 	"skyfox/bookings/model"
+	servicemocks "skyfox/bookings/service/mocks"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,36 +11,48 @@ import (
 )
 
 func TestRevenueService(t *testing.T) {
+	tests := []struct {
+		name        string
+		setupMock   func(bookRepo *servicemocks.MockBookingRepository, showRepo *servicemocks.MockShowRepository)
+		wantRevenue float64
+		wantErr     bool
+	}{
+		{
+			name: "Should return total revenue when shows exist on date",
+			setupMock: func(bookRepo *servicemocks.MockBookingRepository, showRepo *servicemocks.MockShowRepository) {
+				shows := make([]model.Show, 3)
+				showRepo.On("GetAllShowsOn", mock.Anything, mock.AnythingOfType("string")).
+					Return(shows, nil).Once()
+				bookRepo.On("BookingAmountByShows", mock.Anything, mock.AnythingOfType("[]int")).
+					Return(float64(2564.75)).Once()
+			},
+			wantRevenue: 2564.75,
+		},
+		{
+			name: "Should return zero revenue when no shows exist on date",
+			setupMock: func(bookRepo *servicemocks.MockBookingRepository, showRepo *servicemocks.MockShowRepository) {
+				showRepo.On("GetAllShowsOn", mock.Anything, mock.AnythingOfType("string")).
+					Return([]model.Show{}, nil).Once()
+			},
+			wantRevenue: 0,
+		},
+	}
 
-	t.Run("RevenueByDate when shows exists", func(t *testing.T) {
-		showrepo := repomocks.ShowRepository{}
-		bookrepo := repomocks.BookingRepository{}
-		shows := make([]model.Show, 3)
-		expected := 2564.75 //some random number of type float64
-		showrepo.On("GetAllShowsOn", mock.AnythingOfType("context.backgroundCtx"), mock.AnythingOfType("string")).Return(shows, nil).Once()
-		bookrepo.On("BookingAmountByShows", mock.AnythingOfType("context.backgroundCtx"), mock.AnythingOfType("[]int")).Return(expected).Once()
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			bookRepo := servicemocks.NewMockBookingRepository(t)
+			showRepo := servicemocks.NewMockShowRepository(t)
+			tc.setupMock(bookRepo, showRepo)
 
-		service := NewRevenueService(&bookrepo, &showrepo)
+			svc := NewRevenueService(bookRepo, showRepo)
+			got, err := svc.RevenueOn(context.Background(), "")
 
-		got, err := service.RevenueOn(context.Background(), "")
-
-		assert.Nil(t, err)
-		assert.Equal(t, expected, got)
-	})
-
-	t.Run("RevenueByDate when no shows exist", func(t *testing.T) {
-		showrepo := repomocks.ShowRepository{}
-		bookrepo := repomocks.BookingRepository{}
-		shows := make([]model.Show, 0)
-		expected := float64(0)
-		showrepo.On("GetAllShowsOn", mock.AnythingOfType("context.backgroundCtx"), mock.AnythingOfType("string")).Return(shows, nil).Once()
-		bookrepo.On("BookingAmountByShows", mock.AnythingOfType("context.backgroundCtx"), mock.AnythingOfType("[]int")).Return(expected).Once()
-
-		service := NewRevenueService(&bookrepo, &showrepo)
-
-		got, err := service.RevenueOn(context.Background(), "")
-
-		assert.Nil(t, err)
-		assert.Equal(t, expected, got)
-	})
+			if tc.wantErr {
+				assert.NotNil(t, err)
+			} else {
+				assert.Nil(t, err)
+				assert.Equal(t, tc.wantRevenue, got)
+			}
+		})
+	}
 }

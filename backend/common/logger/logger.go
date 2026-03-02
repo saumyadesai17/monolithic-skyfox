@@ -32,23 +32,23 @@ func InitAppLogger(lcfg config.LoggerConfig) {
 }
 
 func Debug(msg string, args ...interface{}) {
-	lgr.Debug(format(msg, args...))
+	GetLogger().Debug(format(msg, args...))
 }
 
 func Info(msg string, args ...interface{}) {
-	lgr.Info(format(msg, args...))
+	GetLogger().Info(format(msg, args...))
 }
 
 func Warn(msg string, args ...interface{}) {
-	lgr.Warn(format(msg, args...))
+	GetLogger().Warn(format(msg, args...))
 }
 
 func Error(msg string, args ...interface{}) {
-	lgr.Error(format(msg, args...))
+	GetLogger().Error(format(msg, args...))
 }
 
 func Fatal(msg string, args ...interface{}) {
-	lgr.Fatal(format(msg, args...))
+	GetLogger().Fatal(format(msg, args...))
 }
 
 func format(template string, args ...interface{}) string {

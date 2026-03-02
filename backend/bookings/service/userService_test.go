@@ -2,8 +2,8 @@ package service
 
 import (
 	"context"
-	"skyfox/_mocks/repomocks"
 	"skyfox/bookings/model"
+	servicemocks "skyfox/bookings/service/mocks"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,20 +11,46 @@ import (
 )
 
 func TestUserService(t *testing.T) {
+	validUser := model.User{Id: 1, Username: "john", Password: "john"}
 
-	expected := model.User{Id: 1, Username: "john", Password: "john"}
+	tests := []struct {
+		name      string
+		setupMock func(repo *servicemocks.MockUserRepository)
+		wantUser  model.User
+		wantErr   bool
+	}{
+		{
+			name: "Should return user when username exists",
+			setupMock: func(repo *servicemocks.MockUserRepository) {
+				repo.On("FindByUsername", mock.Anything, mock.AnythingOfType("string")).
+					Return(validUser, nil).Once()
+			},
+			wantUser: validUser,
+		},
+		{
+			name: "Should return empty user when username is not found",
+			setupMock: func(repo *servicemocks.MockUserRepository) {
+				repo.On("FindByUsername", mock.Anything, mock.AnythingOfType("string")).
+					Return(model.User{}, nil).Once()
+			},
+			wantUser: model.User{},
+		},
+	}
 
-	t.Run("UserDetails", func(t *testing.T) {
-		repo := repomocks.UserRepository{}
-		repo.On("FindByUsername", mock.AnythingOfType("context.backgroundCtx"), mock.AnythingOfType("string")).
-			Return(expected, nil).
-			Once()
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			repo := servicemocks.NewMockUserRepository(t)
+			tc.setupMock(repo)
 
-		service := NewUserService(&repo)
+			svc := NewUserService(repo)
+			got, err := svc.UserDetails(context.Background(), "")
 
-		got, err := service.UserDetails(context.Background(), "")
-
-		assert.Nil(t, err)
-		assert.Equal(t, expected, got)
-	})
+			if tc.wantErr {
+				assert.NotNil(t, err)
+			} else {
+				assert.Nil(t, err)
+				assert.Equal(t, tc.wantUser, got)
+			}
+		})
+	}
 }

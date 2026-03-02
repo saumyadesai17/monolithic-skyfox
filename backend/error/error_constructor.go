@@ -25,3 +25,7 @@ func NewAppError(httpCode int, code string, message string, err error) *AppError
 func InvalidCredentialsError(code string, message string, err error) *AppError {
 	return NewAppError(http.StatusUnauthorized, code, message, err)
 }
+
+func ConflictError(code string, message string, err error) *AppError {
+	return NewAppError(http.StatusConflict, code, message, err)
+}

@@ -1,1 +1,1 @@
-drop table if exists USERTABLE;
+﻿drop table if exists USERTABLE;

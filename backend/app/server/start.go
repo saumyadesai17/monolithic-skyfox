@@ -42,6 +42,7 @@ func Init(cfg appConf.AppConfig) error {
 	showRepository := repository.NewShowRepository(db)
 	userRepository := repository.NewUserRepository(db)
 	customerRepository := repository.NewCustomerRepository(db)
+	userAccountRepository := repository.NewAccountRepository(db)
 
 	database.SeedDB(userRepository)
 
@@ -51,12 +52,14 @@ func Init(cfg appConf.AppConfig) error {
 	showService := service.NewShowService(showRepository, movieGateway)
 	userService := service.NewUserService(userRepository)
 	revenueService := service.NewRevenueService(bookingRepository, showRepository)
+	authService := service.NewAuthService(userAccountRepository)
 
 	// instantiate all handlers
 	bookingController := controller.NewBookingController(bookingService)
 	showController := controller.NewShowController(showService)
 	userController := controller.NewUserController(userService)
 	revenueController := controller.NewRevenueController(revenueService)
+	authController := controller.NewAuthController(authService)
 
 	router := setupApp(cfg)
 
@@ -79,6 +82,15 @@ func Init(cfg appConf.AppConfig) error {
 	}
 
 	authRouter.GET(constants.LoginEndPoint, userController.Login)
+
+	// Versioned public API routes
+	v1 := noAuthRouter.Group("/api/v1")
+	{
+		auth := v1.Group("/auth")
+		{
+			auth.POST("/signup", authController.Signup)
+		}
+	}
 
 	noAuthRouter.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 

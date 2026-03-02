@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"skyfox/bookings/constants"
 	"sync"
+	"unicode"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -36,6 +37,7 @@ func (d *DtoValidator) lazyInit() {
 
 		d.validate.RegisterValidation("phoneNumber", validatePhoneNumber())
 		d.validate.RegisterValidation("maxSeats", validateMaxSeatsAllowed())
+		d.validate.RegisterValidation("passwordStrength", validatePasswordStrength())
 	})
 }
 
@@ -67,5 +69,28 @@ func validateMaxSeatsAllowed() func(fl validator.FieldLevel) bool {
 			return false
 		}
 		return true
+	}
+}
+
+// validatePasswordStrength enforces: min 8 chars, at least one uppercase,
+// one digit, and one special character.
+func validatePasswordStrength() func(fl validator.FieldLevel) bool {
+	return func(fl validator.FieldLevel) bool {
+		password := fl.Field().String()
+		if len(password) < 8 {
+			return false
+		}
+		var hasUpper, hasDigit, hasSpecial bool
+		for _, ch := range password {
+			switch {
+			case unicode.IsUpper(ch):
+				hasUpper = true
+			case unicode.IsDigit(ch):
+				hasDigit = true
+			case unicode.IsPunct(ch) || unicode.IsSymbol(ch):
+				hasSpecial = true
+			}
+		}
+		return hasUpper && hasDigit && hasSpecial
 	}
 }
