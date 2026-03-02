@@ -43,6 +43,7 @@ func Init(cfg appConf.AppConfig) error {
 	userRepository := repository.NewUserRepository(db)
 	customerRepository := repository.NewCustomerRepository(db)
 	userAccountRepository := repository.NewAccountRepository(db)
+	qrBookingRepository := repository.NewQRBookingRepository(db)
 
 	database.SeedDB(userRepository)
 
@@ -53,6 +54,7 @@ func Init(cfg appConf.AppConfig) error {
 	userService := service.NewUserService(userRepository)
 	revenueService := service.NewRevenueService(bookingRepository, showRepository)
 	authService := service.NewAuthService(userAccountRepository)
+	qrService := service.NewQRService(qrBookingRepository, cfg.QR.Secret)
 
 	// instantiate all handlers
 	bookingController := controller.NewBookingController(bookingService)
@@ -60,6 +62,7 @@ func Init(cfg appConf.AppConfig) error {
 	userController := controller.NewUserController(userService)
 	revenueController := controller.NewRevenueController(revenueService)
 	authController := controller.NewAuthController(authService)
+	qrController := controller.NewQRController(qrService)
 
 	router := setupApp(cfg)
 
@@ -89,6 +92,11 @@ func Init(cfg appConf.AppConfig) error {
 		auth := v1.Group("/auth")
 		{
 			auth.POST("/signup", authController.Signup)
+		}
+
+		bookingsV1 := v1.Group("/bookings")
+		{
+			bookingsV1.GET("/:bookingId/qr", qrController.GetQRCode)
 		}
 	}
 

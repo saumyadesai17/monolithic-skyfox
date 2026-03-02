@@ -44,7 +44,7 @@ func (rh *RevenueController) GetRevenue(c *gin.Context) {
 
 	if responseError != nil {
 		err := responseError.(*ae.AppError)
-		logger.Error(err.UnWrap().Error())
+		logger.Error("%s", err.UnWrap().Error())
 		c.AbortWithStatusJSON(err.HTTPCode(), err)
 	}
 

@@ -19,5 +19,5 @@ MovieGateway:
   UiHost: http://localhost:3000
   MovieServiceHost: http://localhost:4567/
 
-
-
+QR:
+  secret: local-dev-qr-secret-change-in-prod

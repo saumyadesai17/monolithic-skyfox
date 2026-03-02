@@ -12,6 +12,7 @@ type AppConfig struct {
 	Database     DbConfig
 	MovieGateway MovieGatewayConfig
 	Logger       LoggerConfig
+	QR           QRConfig
 
 	DB_PASSWORD string
 }
@@ -38,6 +39,10 @@ type MovieGatewayConfig struct {
 
 type LoggerConfig struct {
 	Level string
+}
+
+type QRConfig struct {
+	Secret string `yaml:"secret"`
 }
 
 func LoadConfig(configFile string) (AppConfig, error) {
